@@ -67,7 +67,14 @@ def handle_buttons(update: Update, context: CallbackContext):
     elif text == "Мой счёт":
         update.message.reply_text("Ваш счёт: 0 очков")
     else:
-        update.message.reply_text(update.message.text)
+        user_answer = update.message.text
+        correct_answer = context.user_data.get('current_answer', '').lower().replace('"', '')
+        user_answer_cleaned = user_answer.lower().strip()
+
+        if user_answer_cleaned in correct_answer:
+            update.message.reply_text("Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос».")
+        else:
+            update.message.reply_text("Неправильно… Попробуешь ещё раз?")
 
 
 def main():
@@ -83,9 +90,9 @@ def main():
 
     try:
         redis_conn.ping()
-        print("✅ Подключение к Redis работает!")
+        print("Подключение к Redis работает!")
     except Exception as e:
-        print(f"❌ Ошибка подключения к Redis: {e}")
+        print(f"Ошибка подключения к Redis: {e}")
         return
 
     updater = Updater(TELEGRAM_TOKEN)
