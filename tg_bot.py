@@ -4,9 +4,9 @@ import os
 import random
 from typing import Dict
 import redis
-
 from telegram import Update, ForceReply, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
+from quiz_questions import load_questions, get_random_question
 
 logger = logging.getLogger(__name__)
 
@@ -16,24 +16,6 @@ QUIZ_KEYBOARD = [
 ]
 
 NEW_QUESTION, WAITING_FOR_ANSWER = range(2)
-
-
-def load_questions(file_path):
-    with open(file_path, "r", encoding="KOI8-R") as file:
-        text = file.read().split('\n\n')
-
-    question_answer = {}
-    current_question = None
-
-    for block in text:
-        if block.startswith('Вопрос '):
-            current_question = block.split(':', 1)[1].strip()
-        elif block.startswith('Ответ:') and current_question:
-            answer = block.split(':', 1)[1].strip()
-            question_answer[current_question] = answer
-            current_question = None
-
-    return question_answer
 
 
 def start(update: Update, context: CallbackContext):
@@ -52,9 +34,7 @@ def help_command(update: Update, context: CallbackContext):
 def handle_new_question_request(update: Update, context: CallbackContext):
     redis_conn = context.bot_data['redis']
     user_id = update.message.from_user.id
-    question_answer = random.choice(list(load_questions("questions.txt").items()))
-    question = question_answer[0]
-    answer = question_answer[1]
+    question, answer = get_random_question()
 
     redis_conn.set(f"user:{user_id}:question", question)
     context.user_data['current_answer'] = answer
@@ -83,15 +63,19 @@ def handle_give_up(update: Update, context: CallbackContext):
 
 def main():
     load_dotenv()
+    if not load_questions(os.getenv('QUESTIONS_PATH', 'questions.txt')):
+        logger.error("Не удалось загрузить вопросы!")
+        return
+    
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
     )
-    telegram_token = os.environ('TELEGRAM_TOKEN')
+    telegram_token = os.environ['TELEGRAM_TOKEN']
     redis_conn = redis.Redis(
-        host=os.environ('REDIS_ADDRESS'),
-        port=os.environ('REDIS_PORT'),
-        password=os.environ('REDIS_PASSWORD'),
+        host=os.environ['REDIS_ADDRESS'],
+        port=os.environ['REDIS_PORT'],
+        password=os.environ['REDIS_PASSWORD'],
         db=0,
         decode_responses=True
     )

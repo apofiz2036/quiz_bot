@@ -1,43 +1,35 @@
-import random
-import os
-
 from dotenv import load_dotenv
 import vk_api as vk
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.keyboard import VkKeyboard
 import redis
+import random
+import os
+import logging
+from quiz_questions import load_questions, get_random_question
 
-
-def load_questions(file_path):
-    with open(file_path, "r", encoding="KOI8-R") as file:
-        text = file.read().split('\n\n')
-
-    question_answer = {}
-    current_question = None
-
-    for block in text:
-        if block.startswith('Вопрос '):
-            current_question = block.split(':', 1)[1].strip()
-        elif block.startswith('Ответ:') and current_question:
-            answer = block.split(':', 1)[1].strip()
-            question_answer[current_question] = answer
-            current_question = None
-
-    return question_answer
+logger = logging.getLogger(__name__)
 
 
 def handle_new_question(event, vk_api, redis_conn):
-    questions = load_questions("questions.txt")
-    question, answer = random.choice(list(questions.items()))
+    try:
+        question, answer = get_random_question()
 
-    redis_conn.set(f"user:{event.user_id}:question", question)
-    redis_conn.set(f"user:{event.user_id}:answer", answer)
-    vk_api.messages.send(
-        user_id=event.user_id,
-        message=question,
-        random_id=random.randint(1, 1000),
-        keyboard=get_keyboard()
-    )
+        redis_conn.set(f"user:{event.user_id}:question", question)
+        redis_conn.set(f"user:{event.user_id}:answer", answer)
+        vk_api.messages.send(
+            user_id=event.user_id,
+            message=question,
+            random_id=random.randint(1, 1000),
+            keyboard=get_keyboard()
+        )
+    except Exception as e:
+        logger.error(str(e))
+        vk_api.messages.send(
+            user_id=event.user_id,
+            message="Произошла ошибка при загрузке вопросов",
+            random_id=random.randint(1, 1000)
+        )
 
 
 def handle_give_up(event, vk_api, redis_conn):
@@ -109,10 +101,14 @@ def handle_message(event, vk_api, redis_conn):
 def main():
     load_dotenv()
 
+    if not load_questions(os.getenv('QUESTIONS_PATH', 'questions.txt')):
+        print("Не удалось загрузить вопросы!")
+        return
+
     redis_conn = redis.Redis(
-        host=os.environ('REDIS_ADDRESS'),
-        port=os.environ('REDIS_PORT'),
-        password=os.environ('REDIS_PASSWORD'),
+        host=os.environ['REDIS_ADDRESS'],
+        port=os.environ['REDIS_PORT'],
+        password=os.environ['REDIS_PASSWORD'],
         db=0,
         decode_responses=True
     )
@@ -123,7 +119,7 @@ def main():
         print(f"Ошибка подключения к Redis: {e}")
         return
 
-    vk_token = os.environ('VK_TOKEN')
+    vk_token = os.environ['VK_TOKEN']
     vk_session = vk.VkApi(token=vk_token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
