@@ -123,8 +123,8 @@ def main():
         print(f"Ошибка подключения к Redis: {e}")
         return
 
-    VK_TOKEN = os.getenv('VK_TOKEN')
-    vk_session = vk.VkApi(token=VK_TOKEN)
+    vk_token = os.getenv('VK_TOKEN')
+    vk_session = vk.VkApi(token=vk_token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
     for event in longpoll.listen():

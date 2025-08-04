@@ -81,7 +81,7 @@ def handle_give_up(update: Update, context: CallbackContext):
 
 def main():
     load_dotenv()
-    TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+    telegram_token = os.getenv('TELEGRAM_TOKEN')
     redis_conn = redis.Redis(
         host=os.getenv('REDIS_ADDRESS'),
         port=os.getenv('REDIS_PORT'),
@@ -97,7 +97,7 @@ def main():
         print(f"Ошибка подключения к Redis: {e}")
         return
 
-    updater = Updater(TELEGRAM_TOKEN)
+    updater = Updater(telegram_token)
     dispatcher = updater.dispatcher
     dispatcher.bot_data['redis'] = redis_conn
 
