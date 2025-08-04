@@ -8,6 +8,8 @@ import redis
 from telegram import Update, ForceReply, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
 
+logger = logging.getLogger(__name__)
+
 QUIZ_KEYBOARD = [
     ["Новый вопрос", "Сдаться"],
     ["Мой счёт"]
@@ -81,6 +83,10 @@ def handle_give_up(update: Update, context: CallbackContext):
 
 def main():
     load_dotenv()
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
     telegram_token = os.environ('TELEGRAM_TOKEN')
     redis_conn = redis.Redis(
         host=os.environ('REDIS_ADDRESS'),
@@ -100,11 +106,6 @@ def main():
     updater = Updater(telegram_token)
     dispatcher = updater.dispatcher
     dispatcher.bot_data['redis'] = redis_conn
-
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-    )
-    logger = logging.getLogger(__name__)
 
     dispatcher.add_handler(ConversationHandler(
         entry_points=[CommandHandler("start", start)],
