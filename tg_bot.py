@@ -48,13 +48,13 @@ def help_command(update: Update, context: CallbackContext):
 
 
 def handle_new_question_request(update: Update, context: CallbackContext):
-    r = context.bot_data['redis']
+    redis_conn = context.bot_data['redis']
     user_id = update.message.from_user.id
     question_answer = random.choice(list(load_questions("questions.txt").items()))
     question = question_answer[0]
     answer = question_answer[1]
 
-    r.set(f"user:{user_id}:question", question)
+    redis_conn.set(f"user:{user_id}:question", question)
     context.user_data['current_answer'] = answer
     update.message.reply_text(question)
 
