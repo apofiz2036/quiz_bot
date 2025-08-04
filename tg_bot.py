@@ -81,11 +81,11 @@ def handle_give_up(update: Update, context: CallbackContext):
 
 def main():
     load_dotenv()
-    telegram_token = os.getenv('TELEGRAM_TOKEN')
+    telegram_token = os.environ('TELEGRAM_TOKEN')
     redis_conn = redis.Redis(
-        host=os.getenv('REDIS_ADDRESS'),
-        port=os.getenv('REDIS_PORT'),
-        password=os.getenv('REDIS_PASSWORD'),
+        host=os.environ('REDIS_ADDRESS'),
+        port=os.environ('REDIS_PORT'),
+        password=os.environ('REDIS_PASSWORD'),
         db=0,
         decode_responses=True
     )

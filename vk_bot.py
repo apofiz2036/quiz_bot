@@ -110,9 +110,9 @@ def main():
     load_dotenv()
 
     redis_conn = redis.Redis(
-        host=os.getenv('REDIS_ADDRESS'),
-        port=os.getenv('REDIS_PORT'),
-        password=os.getenv('REDIS_PASSWORD'),
+        host=os.environ('REDIS_ADDRESS'),
+        port=os.environ('REDIS_PORT'),
+        password=os.environ('REDIS_PASSWORD'),
         db=0,
         decode_responses=True
     )
@@ -123,7 +123,7 @@ def main():
         print(f"Ошибка подключения к Redis: {e}")
         return
 
-    vk_token = os.getenv('VK_TOKEN')
+    vk_token = os.environ('VK_TOKEN')
     vk_session = vk.VkApi(token=vk_token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
