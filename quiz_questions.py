@@ -4,11 +4,9 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-QUESTIONS = {}
-
 
 def load_questions(questions_path="questions.txt"):
-    global QUESTIONS
+    questions = {}
     try:
         path = Path(questions_path)
 
@@ -26,13 +24,15 @@ def load_questions(questions_path="questions.txt"):
                 current_question = block.split(':', 1)[1].strip()
             elif block.startswith('Ответ:') and current_question:
                 answer = block.split(':', 1)[1].strip()
-                QUESTIONS[current_question] = answer
+                questions[current_question] = answer
                 current_question = None
-        return True
+        return questions
     except Exception as e:
         logger.error(f"Ошибка загрузки вопросов: {e}")
-        return False
+        return None
 
 
-def get_random_question():
-    return random.choice(list(QUESTIONS.items()))
+def get_random_question(questions):
+    if not questions:
+        return None, None
+    return random.choice(list(questions.items()))

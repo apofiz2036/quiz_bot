@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 def handle_new_question(event, vk_api, redis_conn):
     try:
-        question, answer = get_random_question()
+        questions = eval(redis_conn.get("bot:questions"))
+        question, answer = get_random_question(questions)
 
         redis_conn.set(f"user:{event.user_id}:question", question)
         redis_conn.set(f"user:{event.user_id}:answer", answer)
@@ -100,9 +101,9 @@ def handle_message(event, vk_api, redis_conn):
 
 def main():
     load_dotenv()
-
-    if not load_questions(os.getenv('QUESTIONS_PATH', 'questions.txt')):
-        print("Не удалось загрузить вопросы!")
+    questions = load_questions(os.getenv('QUESTIONS_PATH', 'questions.txt'))
+    if not questions:
+        logger.error("Не удалось загрузить вопросы!")
         return
 
     redis_conn = redis.Redis(
@@ -112,6 +113,7 @@ def main():
         db=0,
         decode_responses=True
     )
+    redis_conn.set("bot:questions", str(questions))
     try:
         redis_conn.ping()
         print("Подключение к Redis работает!")

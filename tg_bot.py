@@ -33,8 +33,9 @@ def help_command(update: Update, context: CallbackContext):
 
 def handle_new_question_request(update: Update, context: CallbackContext):
     redis_conn = context.bot_data['redis']
+    questions = context.bot_data['questions']
     user_id = update.message.from_user.id
-    question, answer = get_random_question()
+    question, answer = get_random_question(questions)
 
     redis_conn.set(f"user:{user_id}:question", question)
     context.user_data['current_answer'] = answer
@@ -63,10 +64,11 @@ def handle_give_up(update: Update, context: CallbackContext):
 
 def main():
     load_dotenv()
-    if not load_questions(os.getenv('QUESTIONS_PATH', 'questions.txt')):
+    questions = load_questions(os.getenv('QUESTIONS_PATH', 'questions.txt'))
+    if not questions:
         logger.error("Не удалось загрузить вопросы!")
         return
-    
+
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
@@ -89,6 +91,7 @@ def main():
 
     updater = Updater(telegram_token)
     dispatcher = updater.dispatcher
+    dispatcher.bot_data['questions'] = questions
     dispatcher.bot_data['redis'] = redis_conn
 
     dispatcher.add_handler(ConversationHandler(
